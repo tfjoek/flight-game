@@ -11,10 +11,12 @@ conn = mysql.connector.connect(
     database='flight_game',
     user='vennilim',
     password='godpassword',
-    charset='utf8mb4',            # Muutetaan yhteys käyttämään utf8mb4-merkistöä
-    collation='utf8mb4_general_ci', # Käytetään yhteensopivaa koodeerausta
     autocommit=True
 )
+
+#    jos tulee hintti error voi kokeilla laittaa nää tohon yhistykseen
+#    charset='utf8mb4',            
+#    collation='utf8mb4_general_ci', 
 
 
 #yhteys testo
