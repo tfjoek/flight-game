@@ -1,1 +1,1 @@
-moi teen myohemmin setuppaan eka idea valmiks tai jt
+setuppaan tan kaikille myohemmi eka idea 
