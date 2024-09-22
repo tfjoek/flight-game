@@ -1,2 +1,2 @@
-LADATKAA GAME.PY JA TESTATKAA TOIMIIKO OMALLA KONEELLA DB YHDISTYS 
-ja sittenkun setuppaa sitä databasea omalle koneelle voi poistaa KAIKEN PAITSI suomen ne jutut koska pelialue == suomi
+![image](https://github.com/user-attachments/assets/ca4cc17e-169c-403a-82b8-ebb83cccd5b0)
+package jonka tarvii. pip install mysql-connector-python
