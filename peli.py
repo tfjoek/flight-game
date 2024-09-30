@@ -2,7 +2,11 @@ import mysql.connector
 import os
 
 def create_connection():
-    # DB yhdistys
+    # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
+        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
+        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
+        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
+        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
     try:
         conn = mysql.connector.connect(
             host='127.0.0.1',
