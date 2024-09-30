@@ -2,17 +2,14 @@ import mysql.connector
 import os
 
 def create_connection():
-    #LAITA TÄHÄN OMAT USER JA PASSWORD JA DB NIMI JOS SULA ERI 
-        #LAITA TÄHÄN OMAT USER JA PASSWORD JA DB NIMI JOS SULA ERI 
-        #LAITA TÄHÄN OMAT USER JA PASSWORD JA DB NIMI JOS SULA ERI 
-        #LAITA TÄHÄN OMAT USER JA PASSWORD JA DB NIMI JOS SULA ERI 
+    # DB yhdistys
     try:
         conn = mysql.connector.connect(
-            host='127.0.0.1',  
-            port=3306,  
-            database='flight_game', 
-            user='vennilim',  
-            password='kappa',  
+            host='127.0.0.1',
+            port=3306,
+            database='flight_game',
+            user='vennilim',
+            password='kappa',
             charset='utf8mb4',
             collation='utf8mb4_general_ci',
             autocommit=True
@@ -27,7 +24,7 @@ def create_connection():
         return None
 
 def get_player_status(player_id):
-   #Hakee pelaajan statsit tietokannasta
+    # Hakee pelaajan statsit tietokannasta
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
@@ -44,9 +41,48 @@ def get_player_status(player_id):
         return player, remaining_airports
     return None, None
 
+def list_airports_by_owner(owner, emoji):
+    """Hakee ja näyttää lentokentät omistajan mukaan (Suomi tai Venäjä)."""
+    conn = create_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT name FROM airport WHERE owner = %s ORDER BY name"
+        cursor.execute(query, (owner,))
+        airports = cursor.fetchall()
 
- #Pelaajan nykyiset statsit
+        cursor.close()
+        conn.close()
+
+        if airports:
+            print(f"Lentokentät {emoji} {owner}:n hallussa:")
+            for airport in airports:
+                print(f"{emoji} - {airport['name']}")
+        else:
+            print(f"Ei lentokenttiä {emoji} {owner}:n hallussa.")
+
+def list_all_airports():
+    """Hakee ja näyttää kaikki lentokentät aakkosjärjestyksessä."""
+    conn = create_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT name, owner FROM airport ORDER BY name"
+        cursor.execute(query)
+        airports = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        if airports:
+            print("Kaikki lentokentät aakkosjärjestyksessä:")
+            for airport in airports:
+                emoji = "🟦" if airport['owner'] == 'Finland' else "🟥"
+                print(f"{emoji} - {airport['name']}")
+        else:
+            print("Ei lentokenttiä löydetty.")
+
+# Pelaajan nykyiset statsit
 def display_player_status(player, remaining_airports):
+    os.system('cls' if os.name == 'nt' else 'clear')
     print("Muista sotilas! Olet meidän ainoa toivo!")
     term_size = os.get_terminal_size()
     print('=' * term_size.columns)
@@ -55,13 +91,18 @@ def display_player_status(player, remaining_airports):
     print(f"Vapauttamattomia kenttiä: {remaining_airports}")
     print(f"Sotapisteet: {player['war_points']}")
     print('=' * term_size.columns)
+    
+    # Valikko
+    print("🟦 1 - Listaa Suomen hallussa olevat lentokentät")
+    print("🟥 2 - Listaa Venäjän vallassa olevat lentokentät")
+    print("🌍 3 - Listaa kaikki lentokentät aakkosjärjestyksessä")
 
 def wait_for_enter():
-    #enter input
+    # Enter input
     input("Paina enter jatkaaksesi...")
 
 def display_story():
-    #tarina ja odottaa enter key
+    # Tarina ja odottaa enter key
     tarina = [
         "Olet kokenut lentäjä, jolla on aina ollut vahva rakkaus kotimaatasi kohtaan. "
         "Viime vuosina Suomen hallitus on tehnyt päätöksiä, jotka ovat rapauttaneet maan puolustuskykyä. "
@@ -83,22 +124,39 @@ def display_story():
     ]
 
     for osa in tarina:
-        os.system('cls' if os.name == 'nt' else 'clear')  # os system clear = poistaa tekstin terminalist
+        os.system('cls' if os.name == 'nt' else 'clear')  # Os system clear = poistaa tekstin terminalista
         print(osa)
         wait_for_enter()
 
 if __name__ == "__main__":
     display_story()
     
-    # tarina loppuessa pelaajan perusnäyttö eli statsit näkyviin
-    os.system('cls' if os.name == 'nt' else 'clear') # os system clear taas 
+    # Tarina loppuessa pelaajan perusnäyttö eli statsit näkyviin
+    os.system('cls' if os.name == 'nt' else 'clear')  # Os system clear taas 
     print("Tarinan loppu. Paina enter aloittaaksesi seikkailun...")
     wait_for_enter()
-    os.system('cls' if os.name == 'nt' else 'clear')
+
+    player_id = '1' 
     
-    player_id = '1'  # pelaajan id 
-    player, remaining_airports = get_player_status(player_id)
-    if player:
-        display_player_status(player, remaining_airports)
-    else:
-        print("Pelaajan tietojen haku epäonnistui.")
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        player, remaining_airports = get_player_status(player_id)
+        if player:
+            display_player_status(player, remaining_airports)
+        else:
+            print("Pelaajan tietojen haku epäonnistui.")
+        
+        choice = input("Valitse toiminto (1, 2 tai 3): ")
+        
+        if choice == '1':
+            list_airports_by_owner('Finland', '🟦') 
+        elif choice == '2':
+            list_airports_by_owner('Russia', '🟥') 
+        elif choice == '3':
+            list_all_airports() 
+        else:
+            print("Virheellinen valinta, jatketaan...")
+        
+     
+        wait_for_enter()
+
