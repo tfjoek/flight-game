@@ -2,11 +2,7 @@ import mysql.connector
 import os
 
 def create_connection():
-    # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
-        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
-        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
-        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
-        # DB yhdistys LAITA OMAT TIEDOT TAHAN OMAL KONEEL 
+    # DB yhdistys
     try:
         conn = mysql.connector.connect(
             host='127.0.0.1',
@@ -140,8 +136,9 @@ if __name__ == "__main__":
     print("Tarinan loppu. Paina enter aloittaaksesi seikkailun...")
     wait_for_enter()
 
-    player_id = '1' 
+    player_id = '1'  # Pelaajan id
     
+    # Pääsilmukka, joka pitää näkymän käynnissä ja odottaa valintoja
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
         player, remaining_airports = get_player_status(player_id)
