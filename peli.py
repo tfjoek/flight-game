@@ -29,7 +29,7 @@ def get_airport_info(icao_code):
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT name, owner FROM airport WHERE ident = %s"
+        query = "SELECT name, owner, latitude_deg, longitude_deg FROM airport WHERE ident = %s"
         cursor.execute(query, (icao_code,))
         airport = cursor.fetchone()
         cursor.close()
@@ -61,8 +61,8 @@ def move_player(player_id, destination_icao):
             current_fuel = player['fuel']
 
             # Hakee nykyisen sijainnin ja kohteen koordinaatit
-            current_airport = get_airport_location(current_location)
-            destination_airport = get_airport_location(destination_icao)
+            current_airport = get_airport_info(current_location)
+            destination_airport = get_airport_info(destination_icao)
 
             if current_airport and destination_airport:
                 lat1, lon1 = current_airport['latitude_deg'], current_airport['longitude_deg']
