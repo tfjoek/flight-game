@@ -1,8 +1,8 @@
 import mysql.connector
 import os
-import math
 import random
 import time
+from geopy.distance import distance as geopy_distance
 from tarina import hae_tarina  # Importoi tarina uudesta tiedostosta
 
 def create_connection():
@@ -10,7 +10,7 @@ def create_connection():
         conn = mysql.connector.connect(
             host='127.0.0.1',
             port=3306,
-            database='testi1',
+            database='flight_game',
             user='vennilim',
             password='kappa123',
             charset='utf8mb4',
@@ -26,25 +26,22 @@ def create_connection():
         print(f"Tietokantavirhe: {err}")
         return None
 
+def get_star_rating(difficulty):
+    stars = '⭐' * difficulty
+    spaced_stars = ' '.join(stars)
+    return spaced_stars
+
 def get_airport_info(icao_code):
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT name, owner, latitude_deg, longitude_deg FROM airport WHERE ident = %s"
+        query = "SELECT name, owner, latitude_deg, longitude_deg, difficulty FROM airport WHERE ident = %s"
         cursor.execute(query, (icao_code,))
         airport = cursor.fetchone()
         cursor.close()
         conn.close()
         return airport
     return None
-
-def calculate_distance(lat1, lon1, lat2, lon2):
-    R = 6371  # Maapallon säde kilometreinä
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lat2 - lon1)
-    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
 
 def get_player_status(player_id):
     conn = create_connection()
@@ -64,10 +61,11 @@ def get_player_status(player_id):
     return None, None
 
 def list_airports_by_owner(owner, emoji):
+    os.system('cls' if os.name == 'nt' else 'clear')
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT ident, name FROM airport WHERE owner = %s ORDER BY name"
+        query = "SELECT ident, name, difficulty FROM airport WHERE owner = %s ORDER BY name"
         cursor.execute(query, (owner,))
         airports = cursor.fetchall()
         cursor.close()
@@ -76,15 +74,17 @@ def list_airports_by_owner(owner, emoji):
         if airports:
             print(f"Lentokentät {emoji} {owner}:n hallussa:")
             for airport in airports:
-                print(f"{emoji} - {airport['ident']} ({airport['name']})")
+                stars = get_star_rating(airport['difficulty'])
+                print(f"{emoji} - {airport['ident']} ({airport['name']}) {stars}")
         else:
             print(f"Ei lentokenttiä {emoji} {owner}:n hallussa.")
 
 def list_all_airports():
+    os.system('cls' if os.name == 'nt' else 'clear')
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
-        query = "SELECT ident, name, owner FROM airport ORDER BY name"
+        query = "SELECT ident, name, owner, difficulty FROM airport ORDER BY name"
         cursor.execute(query)
         airports = cursor.fetchall()
         cursor.close()
@@ -94,16 +94,44 @@ def list_all_airports():
             print("Kaikki lentokentät aakkosjärjestyksessä:")
             for airport in airports:
                 emoji = "🟦" if airport['owner'] == 'Finland' else "🟥"
-                print(f"{emoji} - {airport['ident']} ({airport['name']})")
+                stars = get_star_rating(airport['difficulty'])
+                print(f"{emoji} - {airport['ident']} ({airport['name']}) {stars}")
         else:
             print("Ei lentokenttiä löydetty.")
 
+def open_store(itemBoostPercentage):
+    conn = create_connection()
+    if conn:
+        cursor = conn.cursor(dictionary=True)
+        query = "SELECT id, item, effect, price FROM store"
+        cursor.execute(query)
+        store = cursor.fetchall()
+
+        cursor.close()
+        conn.close()
+
+        for item in store:
+            print(f"{item['id']} {item['item']} {item['price']}€, {item['effect']}.")
+        while True:
+            storeChoice = input("Valitse numerolla:")
+            if storeChoice == '1':
+                itemBoostPercentage = 10
+                break
+            elif storeChoice == '2':
+                itemBoostPercentage = 20
+                break
+            else:
+                print("FAIL!")
+
+    return itemBoostPercentage
+
 def list_nearest_airports(player_location, limit=5):
+    os.system('cls' if os.name == 'nt' else 'clear')
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
         query = """
-            SELECT ident, name, latitude_deg, longitude_deg, owner
+            SELECT ident, name, latitude_deg, longitude_deg, owner, difficulty
             FROM airport
             WHERE owner = 'Russia'
         """
@@ -114,18 +142,19 @@ def list_nearest_airports(player_location, limit=5):
 
         player_airport = get_airport_info(player_location)
         if player_airport:
-            player_lat = player_airport['latitude_deg']
-            player_lon = player_airport['longitude_deg']
+            player_coords = (player_airport['latitude_deg'], player_airport['longitude_deg'])
 
             airports_with_distance = []
             for airport in airports:
-                distance = calculate_distance(player_lat, player_lon, airport['latitude_deg'], airport['longitude_deg'])
+                airport_coords = (airport['latitude_deg'], airport['longitude_deg'])
+                distance = geopy_distance(player_coords, airport_coords).km
                 airports_with_distance.append((airport, distance))
 
             nearest_airports = sorted(airports_with_distance, key=lambda x: x[1])[:limit]
             print("\nValitse seuraava kohde:")
             for airport, distance in nearest_airports:
-                print(f"• {airport['ident']} ({airport['name']}) 🟥 - Etäisyys: {int(distance)} km")
+                stars = get_star_rating(airport['difficulty'])
+                print(f"• {airport['ident']} ({airport['name']}) {stars} 🟥 - Etäisyys: {int(distance)} km")
         else:
             print("Nykyisen sijainnin tietoja ei löydy.")
 
@@ -149,6 +178,9 @@ def update_player_fuel(player_id, fuel_cost):
         cursor.close()
         conn.close()
 
+# Other functions continue below, maintaining the same structure and formatting...
+
+
 def move_player(player_id, destination_icao):
     conn = create_connection()
     if conn:
@@ -164,10 +196,27 @@ def move_player(player_id, destination_icao):
             destination_airport = get_airport_info(destination_icao)
 
             if current_airport and destination_airport:
-                lat1, lon1 = current_airport['latitude_deg'], current_airport['longitude_deg']
-                lat2, lon2 = destination_airport['latitude_deg'], destination_airport['longitude_deg']
+                if destination_airport['owner'] == 'Russia':
+                    print("\n⚠️ VAROITUS! Yrität liikkua Venäjän omistamaan lentokenttään.")
+                    print("1 - Hyökkää lentokentälle")
+                    print("2 - Peruuta")
 
-                distance = calculate_distance(lat1, lon1, lat2, lon2)
+                    attack_choice = input("Valitse toiminto (1 tai 2): ")
+
+                    if attack_choice == '1':
+                        attack_airport(player_id, destination_icao)
+                        return
+                    elif attack_choice == '2':
+                        print("Liikkuminen peruutettu.")
+                        return
+                    else:
+                        print("⚠️ Virheellinen valinta, liikkuminen peruutettu.")
+                        return
+
+                current_coords = (current_airport['latitude_deg'], current_airport['longitude_deg'])
+                destination_coords = (destination_airport['latitude_deg'], destination_airport['longitude_deg'])
+
+                distance = geopy_distance(current_coords, destination_coords).km
 
                 if distance > current_fuel:
                     print(f"Sinulla ei ole tarpeeksi polttoainetta tähän matkaan. Tarvittava polttoaine: {distance:.2f} km.")
@@ -183,7 +232,6 @@ def move_player(player_id, destination_icao):
 
 def attack_airport(player_id, destination_icao):
     destination_airport = get_airport_info(destination_icao)
-
     if destination_airport and destination_airport['owner'] == 'Russia':
         print("\n⚔️ Valitse hyökkäystyyli:")
         print("1. ⚡ Nopeampi hyökkäys: 50% onnistumisprosentti, polttoainekustannus 20 km")
@@ -222,7 +270,6 @@ def attack_airport(player_id, destination_icao):
             else:
                 print("❌ Hyökkäys epäonnistui! Menetit polttoainetta, mutta kohde pysyi Venäjän hallinnassa.")
                 update_player_fuel(player_id, fuel_cost)
-
         else:
             print("⚠️ Virheellinen valinta, hyökkäys peruutettu.")
     else:
@@ -232,7 +279,8 @@ def display_player_status(player, remaining_airports):
     current_airport = get_airport_info(player['location'])
     if current_airport:
         emoji = "🟦" if current_airport['owner'] == 'Finland' else "🟥"
-        print(f"\n✈️  Pelaaja on lentokentällä: {current_airport['name']} ({player['location']}) {emoji}")
+        stars = get_star_rating(current_airport['difficulty'])
+        print(f"\n✈️  Pelaaja on lentokentällä: {emoji} {current_airport['name']} ({player['location']}) {stars}")
     else:
         print("Virhe: Lentokentän tietoja ei löytynyt.")
 
@@ -259,69 +307,74 @@ if __name__ == "__main__":
     wait_for_enter()
 
     player_id = '1'
+    itemBoostPercentage = 0  # Initialize item boost percentage
 
-while True:
-    os.system('cls' if os.name == 'nt' else 'clear')
-    player, remaining_airports = get_player_status(player_id)
-    if player:
-        display_player_status(player, remaining_airports)
-    else:
-        print("Pelaajan tietojen haku epäonnistui.")
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        player, remaining_airports = get_player_status(player_id)
+        if player:
+            display_player_status(player, remaining_airports)
+        else:
+            print("Pelaajan tietojen haku epäonnistui.")
 
-    print("\n📒✏️: Valitse seuraava toimintasi:")
-    print("1 - Selaa lentokenttiä")
-    print("2 - Hyökkää lentokentälle")
-    print("3 - Liiku lentokentälle")
-    print("4 - Debug: Muuta pelaajan polttoainetta")
-    print("5 - Listaa kaikki lentokentät")
+        print("\n📒✏️: Valitse seuraava toimintasi:")
+        print("1 - Selaa lentokenttiä")
+        print("2 - Hyökkää lentokentälle")
+        print("3 - Liiku lentokentälle")
+        print("4 - Debug: Muuta pelaajan polttoainetta")
+        print("5 - Listaa kaikki lentokentät")
+        print("6 - Avaa kauppa")  # Added explicit store option
 
-    choice = input("Valitse vaihtoehto: ")
+        choice = input("Valitse vaihtoehto: ")
 
-    if choice == '1':
-        print("\n1 - Listaa Suomen hallussa olevat lentokentät")
-        print("2 - Listaa Venäjän vallassa olevat lentokentät")
-        print("3 - Listaa lentokentät etäisyyden mukaan")
-        print("4 - Listaa lentokentät aakkosjärjestyksessä")
-        sub_choice = input("Valitse luokittelu: ")
+        if choice == '1':
+            print("\n1 - Listaa Suomen hallussa olevat lentokentät")
+            print("2 - Listaa Venäjän vallassa olevat lentokentät")
+            print("3 - Listaa lentokentät etäisyyden mukaan")
+            print("4 - Listaa lentokentät aakkosjärjestyksessä")
+            sub_choice = input("Valitse luokittelu: ")
 
-        if sub_choice == '1':
-            list_airports_by_owner('Finland', '🟦')
-        elif sub_choice == '2':
-            list_airports_by_owner('Russia', '🟥')
-        elif sub_choice == '3':
+            if sub_choice == '1':
+                list_airports_by_owner('Finland', '🟦')
+            elif sub_choice == '2':
+                list_airports_by_owner('Russia', '🟥')
+            elif sub_choice == '3':
+                list_nearest_airports(player['location'])
+            elif sub_choice == '4':
+                list_all_airports()
+            else:
+                print("⚠️ Virheellinen valinta.")
+            wait_for_enter()
+        elif choice == '2':
+            print("Valitset hyökkäyskohteen lähimmistä kohteista:")
             list_nearest_airports(player['location'])
-        elif sub_choice == '4':
+            destination = input("\n🎯 Syötä hyökkäyskohteen ICAO-tunnus (esim. EFHK tai 'cancel' peruuttaaksesi): ").upper()
+            if destination == 'CANCEL':
+                print("Peruutettu.")
+            else:
+                attack_airport(player_id, destination)
+            wait_for_enter()
+        elif choice == '3':
+            destination = input("\n✈️ Syötä kohteen ICAO-tunnus (esim. EFHK tai 'cancel' peruuttaaksesi): ").upper()
+            if destination == 'CANCEL':
+                print("Peruutettu.")
+            else:
+                move_player(player_id, destination)
+            wait_for_enter()
+        elif choice == '4':
+            new_fuel = input("🔧 Syötä uusi polttoainemäärä (km): ")
+            if new_fuel.isdigit():
+                update_player_fuel(player_id, int(new_fuel))
+                print(f"Polttoainemäärä päivitetty: {new_fuel} km")
+            else:
+                print("Virheellinen syöte, polttoainetta ei päivitetty.")
+            wait_for_enter()
+        elif choice == '5':
             list_all_airports()
+            wait_for_enter()
+        elif choice == '6':  
+            itemBoostPercentage = open_store(itemBoostPercentage)
+            wait_for_enter()
         else:
-            print("⚠️ Virheellinen valinta.")
-        wait_for_enter()
-    elif choice == '2':
-        print("Valitset hyökkäyskohteen lähimmistä kohteista:")
-        list_nearest_airports(player['location'])
-        destination = input("\n🎯 Syötä hyökkäyskohteen ICAO-tunnus (esim. EFHK tai 'cancel' peruuttaaksesi): ").upper()
-        if destination == 'CANCEL':
-            print("Peruutettu.")
-        else:
-            attack_airport(player_id, destination)
-        wait_for_enter()
-    elif choice == '3':
-        destination = input("\n✈️ Syötä kohteen ICAO-tunnus (esim. EFHK tai 'cancel' peruuttaaksesi): ").upper()
-        if destination == 'CANCEL':
-            print("Peruutettu.")
-        else:
-            move_player(player_id, destination)
-        wait_for_enter()
-    elif choice == '4':
-        new_fuel = input("🔧 Syötä uusi polttoainemäärä (km): ")
-        if new_fuel.isdigit():
-            update_player_fuel(player_id, int(new_fuel))
-            print(f"Polttoainemäärä päivitetty: {new_fuel} km")
-        else:
-            print("Virheellinen syöte, polttoainetta ei päivitetty.")
-        wait_for_enter()
-    elif choice == '5':
-        list_all_airports()
-        wait_for_enter()
-    else:
-        print("⚠️ Virheellinen valinta, jatketaan...")
-        wait_for_enter()
+            print("⚠️ Virheellinen valinta, jatketaan...")
+            wait_for_enter()
