@@ -26,6 +26,7 @@ def create_connection():
         print(f"Tietokantavirhe: {err}")
         return None
 
+
 def get_star_rating(difficulty):
     stars = '⭐' * difficulty
     spaced_stars = ' '.join(stars)
@@ -178,7 +179,18 @@ def update_player_fuel(player_id, fuel_cost):
         cursor.close()
         conn.close()
 
-# Other functions continue below, maintaining the same structure and formatting...
+#debug 
+def set_player_fuel_debug(player_id, new_fuel):
+    conn = create_connection()
+    if conn:
+        cursor = conn.cursor()
+        query = "UPDATE game SET fuel = %s WHERE id = %s"
+        cursor.execute(query, (new_fuel, player_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+
 
 
 def move_player(player_id, destination_icao):
@@ -196,32 +208,15 @@ def move_player(player_id, destination_icao):
             destination_airport = get_airport_info(destination_icao)
 
             if current_airport and destination_airport:
-                if destination_airport['owner'] == 'Russia':
-                    print("\n⚠️ VAROITUS! Yrität liikkua Venäjän omistamaan lentokenttään.")
-                    print("1 - Hyökkää lentokentälle")
-                    print("2 - Peruuta")
-
-                    attack_choice = input("Valitse toiminto (1 tai 2): ")
-
-                    if attack_choice == '1':
-                        attack_airport(player_id, destination_icao)
-                        return
-                    elif attack_choice == '2':
-                        print("Liikkuminen peruutettu.")
-                        return
-                    else:
-                        print("⚠️ Virheellinen valinta, liikkuminen peruutettu.")
-                        return
-
                 current_coords = (current_airport['latitude_deg'], current_airport['longitude_deg'])
                 destination_coords = (destination_airport['latitude_deg'], destination_airport['longitude_deg'])
-
                 distance = geopy_distance(current_coords, destination_coords).km
+                fuel_cost = distance  # Fuel cost equals the distance traveled
 
-                if distance > current_fuel:
-                    print(f"Sinulla ei ole tarpeeksi polttoainetta tähän matkaan. Tarvittava polttoaine: {distance:.2f} km.")
+                if fuel_cost > current_fuel:
+                    print(f"❌ Sinulla ei ole tarpeeksi polttoainetta tähän matkaan. Tarvittava polttoaine: {fuel_cost:.2f} km.")
                 else:
-                    new_fuel = current_fuel - distance
+                    new_fuel = current_fuel - fuel_cost
                     cursor.execute("UPDATE game SET location = %s, fuel = %s WHERE id = %s", (destination_icao, new_fuel, player_id))
                     conn.commit()
                     print(f"Olet nyt saapunut kohteeseen {destination_icao}. Matka oli {distance:.2f} km, polttoainetta jäljellä: {new_fuel:.2f} km.")
@@ -230,50 +225,94 @@ def move_player(player_id, destination_icao):
         cursor.close()
         conn.close()
 
+
+
 def attack_airport(player_id, destination_icao):
     destination_airport = get_airport_info(destination_icao)
-    if destination_airport and destination_airport['owner'] == 'Russia':
+    player = get_player_status(player_id)[0]
+
+    if destination_airport and destination_airport['owner'] == 'Russia' and player:
+        current_airport = get_airport_info(player['location'])
+
+        # Calculate distance between current location and target airport
+        current_coords = (current_airport['latitude_deg'], current_airport['longitude_deg'])
+        destination_coords = (destination_airport['latitude_deg'], destination_airport['longitude_deg'])
+        distance = geopy_distance(current_coords, destination_coords).km
+
+        # Define success ranges based on difficulty
+        difficulty = destination_airport['difficulty']
+        fast_attack_success_range = {
+            1: (70, 80),
+            2: (60, 70),
+            3: (50, 60),
+            4: (40, 50),
+            5: (30, 40)
+        }
+        precise_attack_success_range = {
+            1: (90, 95),
+            2: (80, 90),
+            3: (70, 80),
+            4: (60, 70),
+            5: (50, 60)
+        }
+
         print("\n⚔️ Valitse hyökkäystyyli:")
-        print("1. ⚡ Nopeampi hyökkäys: 50% onnistumisprosentti, polttoainekustannus 20 km")
-        print("2. 🎯 Tarkempi hyökkäys: 80% onnistumisprosentti, polttoainekustannus 50 km")
+        print("1. ⚡ Nopeampi hyökkäys (vähemmän tarkka)")
+        print("2. 🎯 Tarkempi hyökkäys (suurempi onnistumismahdollisuus)")
 
         attack_choice = input("\nValintasi (1 tai 2): ")
 
         if attack_choice == '1':
-            success_chance = random.randint(1, 100)
-            fuel_cost = 20
+            success_chance_range = fast_attack_success_range[difficulty]
+            success_chance = random.randint(*success_chance_range)
+            fuel_cost = distance * 0.5  # Fast attack consumes less fuel per km
 
-            print(f"\n⚡ Valitsit nopeamman hyökkäyksen! Onnistumistodennäköisyys: 50%, Polttoainekustannus: {fuel_cost} km")
-            time.sleep(1)
-            print("\n🛩️ Hyökkäys käynnissä...")
-            time.sleep(2)
-
-            if success_chance > 50:
-                print(f"🏆 Hyökkäys kohteeseen {destination_airport['name']} onnistui! Lentokenttä on nyt Suomen hallinnassa.")
-                update_airport_owner(destination_icao, 'Finland')
+            if fuel_cost > player['fuel']:
+                print("❌ Sinulla ei ole tarpeeksi polttoainetta hyökätä tähän kohteeseen!")
             else:
-                print("❌ Hyökkäys epäonnistui! Menetit polttoainetta, mutta kohde pysyi Venäjän hallinnassa.")
-                update_player_fuel(player_id, fuel_cost)
+                print(f"\n⚡ Valitsit nopeamman hyökkäyksen! Onnistumistodennäköisyys: {success_chance}%, Polttoainekustannus: {fuel_cost:.2f} km")
+                time.sleep(1)
+                print("\n🛩️ Hyökkäys käynnissä...")
+                time.sleep(2)
+                print("\n🚀 Ammuit raketin niitä päin!")
+                time.sleep(2)
+
+                if random.randint(1, 100) <= success_chance:
+                    print(f"🏆 Hyökkäys kohteeseen {destination_airport['name']} onnistui! Hyvin pelattu! Lentokenttä on nyt Suomen hallinnassa.")
+                    update_airport_owner(destination_icao, 'Finland')
+                else:
+                    print("❌ Hyökkäys epäonnistui! Menetit polttoainetta, mutta kohde pysyi Venäjän hallinnassa...")
+                    update_player_fuel(player_id, fuel_cost)
 
         elif attack_choice == '2':
-            success_chance = random.randint(1, 100)
-            fuel_cost = 50
+            success_chance_range = precise_attack_success_range[difficulty]
+            success_chance = random.randint(*success_chance_range)
+            fuel_cost = distance  # Precise attack consumes more fuel per km
 
-            print(f"\n🎯 Valitsit tarkemman hyökkäyksen! Onnistumistodennäköisyys: 80%, Polttoainekustannus: {fuel_cost} km")
-            time.sleep(1)
-            print("\n🛩️ Hyökkäys käynnissä...")
-            time.sleep(2)
-
-            if success_chance > 20:
-                print(f"🏆 Hyökkäys kohteeseen {destination_airport['name']} onnistui! Lentokenttä on nyt Suomen hallinnassa.")
-                update_airport_owner(destination_icao, 'Finland')
+            if fuel_cost > player['fuel']:
+                print("❌ Sinulla ei ole tarpeeksi polttoainetta hyökätä tähän kohteeseen!")
             else:
-                print("❌ Hyökkäys epäonnistui! Menetit polttoainetta, mutta kohde pysyi Venäjän hallinnassa.")
-                update_player_fuel(player_id, fuel_cost)
+                print(f"\n🎯 Valitsit tarkemman hyökkäyksen! Onnistumistodennäköisyys: {success_chance}%, Polttoainekustannus: {fuel_cost:.2f} km")
+                time.sleep(1)
+                print("\n🛩️ Hyökkäys käynnissä...")
+                time.sleep(2)
+                print("\n🚀 Hiivit heidän taakse... ja HYÖKKÄÄT!")
+                time.sleep(2)
+
+                if random.randint(1, 100) <= success_chance:
+                    print(f"🏆 Hyökkäys kohteeseen {destination_airport['name']} onnistui! Lentokenttä on nyt Suomen hallinnassa.")
+                    update_airport_owner(destination_icao, 'Finland')
+                else:
+                    print("❌ Hyökkäys epäonnistui! Menetit polttoainetta, mutta kohde pysyi Venäjän hallinnassa.")
+                    update_player_fuel(player_id, fuel_cost)
         else:
             print("⚠️ Virheellinen valinta, hyökkäys peruutettu.")
     else:
         print("⚠️ Et voi hyökätä tähän lentokenttään, koska se ei ole Venäjän hallussa.")
+
+
+
+
 
 def display_player_status(player, remaining_airports):
     current_airport = get_airport_info(player['location'])
@@ -364,11 +403,12 @@ if __name__ == "__main__":
         elif choice == '4':
             new_fuel = input("🔧 Syötä uusi polttoainemäärä (km): ")
             if new_fuel.isdigit():
-                update_player_fuel(player_id, int(new_fuel))
+                set_player_fuel_debug(player_id, int(new_fuel))
                 print(f"Polttoainemäärä päivitetty: {new_fuel} km")
             else:
                 print("Virheellinen syöte, polttoainetta ei päivitetty.")
             wait_for_enter()
+
         elif choice == '5':
             list_all_airports()
             wait_for_enter()
