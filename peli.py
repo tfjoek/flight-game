@@ -208,6 +208,26 @@ def move_player(player_id, destination_icao):
             destination_airport = get_airport_info(destination_icao)
 
             if current_airport and destination_airport:
+                # Check if the destination airport is controlled by Russia
+                if destination_airport['owner'] == 'Russia':
+                    print("\n⚠️ VAROITUS! Yrität liikkua Venäjän omistamaan lentokenttään.")
+                    print("Sinun täytyy hyökätä ennen kuin voit siirtyä sinne.")
+                    print("1 - Hyökkää lentokentälle")
+                    print("2 - Peruuta")
+
+                    attack_choice = input("Valitse toiminto (1 tai 2): ")
+
+                    if attack_choice == '1':
+                        attack_airport(player_id, destination_icao)
+                        return  # Exit the move function after the attack process
+                    elif attack_choice == '2':
+                        print("Liikkuminen peruutettu.")
+                        return  # Exit the move function without moving the player
+                    else:
+                        print("⚠️ Virheellinen valinta, liikkuminen peruutettu.")
+                        return  # Exit the move function without moving the player
+
+                # If the airport is not controlled by Russia, proceed with the move
                 current_coords = (current_airport['latitude_deg'], current_airport['longitude_deg'])
                 destination_coords = (destination_airport['latitude_deg'], destination_airport['longitude_deg'])
                 distance = geopy_distance(current_coords, destination_coords).km
@@ -234,12 +254,12 @@ def attack_airport(player_id, destination_icao):
     if destination_airport and destination_airport['owner'] == 'Russia' and player:
         current_airport = get_airport_info(player['location'])
 
-        # Calculate distance between current location and target airport
+       
         current_coords = (current_airport['latitude_deg'], current_airport['longitude_deg'])
         destination_coords = (destination_airport['latitude_deg'], destination_airport['longitude_deg'])
         distance = geopy_distance(current_coords, destination_coords).km
 
-        # Define success ranges based on difficulty
+        #difficulty scaling
         difficulty = destination_airport['difficulty']
         fast_attack_success_range = {
             1: (70, 80),
