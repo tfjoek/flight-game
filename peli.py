@@ -5,6 +5,7 @@ import time
 from geopy.distance import distance as geopy_distance
 from tarina import hae_tarina  # Importoi tarina uudesta tiedostosta
 
+
 # Creates and manages the database connection
 def create_connection():
     try:
@@ -12,8 +13,8 @@ def create_connection():
             host='127.0.0.1',
             port=3306,
             database='flight_game',
-            user='vennilim',
-            password='kappa123',
+            user='root',
+            password='ideal',
             charset='utf8mb4',
             collation='utf8mb4_general_ci',
             autocommit=True
@@ -27,12 +28,14 @@ def create_connection():
         print(f"Tietokantavirhe: {err}")
         return None
 
+
 # Resets the game state for the player
 def reset_game_on_start(player_id):
     reset_player_stats(player_id)
     reset_airports()
     reset_inventory(player_id)  # Resets the player's inventory at the start
     print("Peli on nollattu ja aloitat alusta!")
+
 
 # Resets player stats like location, fuel, and war points
 def reset_player_stats(player_id):
@@ -44,6 +47,7 @@ def reset_player_stats(player_id):
         conn.commit()
         cursor.close()
         conn.close()
+
 
 # Resets the ownership of all airports to their default values
 def reset_airports():
@@ -61,6 +65,7 @@ def reset_airports():
         cursor.close()
         conn.close()
 
+
 # Clears the player's inventory, removing all items they possess
 def reset_inventory(player_id):
     conn = create_connection()
@@ -73,11 +78,13 @@ def reset_inventory(player_id):
         conn.close()
         print("Inventaario on nollattu.")
 
+
 # Displays the star rating based on the airport's difficulty level
 def get_star_rating(difficulty):
     stars = '⭐' * difficulty
     spaced_stars = ' '.join(stars)
     return spaced_stars
+
 
 # Retrieves detailed information about a specific airport
 def get_airport_info(icao_code):
@@ -91,6 +98,7 @@ def get_airport_info(icao_code):
         conn.close()
         return airport
     return None
+
 
 # Retrieves player status like location, fuel, and remaining airports to be liberated
 def get_player_status(player_id):
@@ -109,6 +117,7 @@ def get_player_status(player_id):
 
         return player, remaining_airports
     return None, None
+
 
 # Lists airports controlled by a specific owner (Finland or Russia)
 def list_airports_by_owner(owner, emoji):
@@ -130,6 +139,7 @@ def list_airports_by_owner(owner, emoji):
         else:
             print(f"Ei lentokenttiä {emoji} {owner}:n hallussa.")
 
+
 # Lists all airports by difficulty level
 def list_airports_by_difficulty():
     conn = create_connection()
@@ -147,6 +157,7 @@ def list_airports_by_difficulty():
             stars = get_star_rating(airport['difficulty'])
             print(f"{emoji} - {airport['ident']} ({airport['name']}) {stars}")
 
+
 # Calculates the percentage of airports liberated from Russian control
 def calculate_liberation_percentage():
     conn = create_connection()
@@ -163,6 +174,7 @@ def calculate_liberation_percentage():
 
         liberation_percentage = (finland_airports / total_airports) * 100
         return liberation_percentage
+
 
 # Lists the nearest airports from the player's current location
 def list_nearest_airports(player_location):
@@ -198,6 +210,7 @@ def list_nearest_airports(player_location):
         else:
             print("Nykyisen sijainnin tietoja ei löydy.")
 
+
 # Updates the ownership of an airport
 def update_airport_owner(icao_code, new_owner):
     conn = create_connection()
@@ -208,6 +221,7 @@ def update_airport_owner(icao_code, new_owner):
         conn.commit()
         cursor.close()
         conn.close()
+
 
 # Updates the player's fuel after movement or attack
 def update_player_fuel(player_id, fuel_cost):
@@ -220,6 +234,7 @@ def update_player_fuel(player_id, fuel_cost):
         cursor.close()
         conn.close()
 
+
 # Debug function to manually set a player's fuel level
 def set_player_fuel_debug(player_id, new_fuel):
     conn = create_connection()
@@ -231,6 +246,7 @@ def set_player_fuel_debug(player_id, new_fuel):
         cursor.close()
         conn.close()
 
+
 # Debug function to manually set a player's war points
 def set_player_war_points_debug(player_id, new_war_points):
     conn = create_connection()
@@ -241,6 +257,7 @@ def set_player_war_points_debug(player_id, new_war_points):
         conn.commit()
         cursor.close()
         conn.close()
+
 
 # Displays the player's inventory, showing items and their quantities
 def display_inventory(player_id):
@@ -267,6 +284,7 @@ def display_inventory(player_id):
     else:
         print("Tietokantavirhe: inventaariota ei voitu hakea.")
 
+
 # Checks if a player has a specific item with a given effect
 def has_item(player_id, item_effect):
     conn = create_connection()
@@ -284,19 +302,29 @@ def has_item(player_id, item_effect):
         return item is not None  # Returns True if the item is found, otherwise False
     return False
 
+
 # Calculates the fuel cost for a movement or attack, considering item effects
 def calculate_fuel_cost(player_id, base_fuel_cost):
-    # Check for specific fuel boosters and reduce the fuel cost accordingly
+    # Initialize total reduction percentage
+    total_reduction = 0.0
+
+    # Check for specific fuel boosters and add their reduction values to the total
     if has_item(player_id, 'debug_fuel_saver'):
-        return base_fuel_cost * 0.10  # Reduces fuel consumption by 90%
-    elif has_item(player_id, 'fuel_efficiency_booster_15_percent'):
-        return base_fuel_cost * 0.85  # Reduces fuel consumption by 15%
-    elif has_item(player_id, 'fuel_efficiency_booster_10_percent'):
-        return base_fuel_cost * 0.90  # Reduces fuel consumption by 10%
-    elif has_item(player_id, 'fuel_efficiency_booster_5_percent'):
-        return base_fuel_cost * 0.95  # Reduces fuel consumption by 5%
-    else:
-        return base_fuel_cost  # No booster found, return the original cost
+        total_reduction += 0.90  # Reduces fuel consumption by 90%
+    if has_item(player_id, 'fuel_efficiency_booster_15_percent'):
+        total_reduction += 0.15  # Reduces fuel consumption by 15%
+    if has_item(player_id, 'fuel_efficiency_booster_10_percent'):
+        total_reduction += 0.10  # Reduces fuel consumption by 10%
+    if has_item(player_id, 'fuel_efficiency_booster_5_percent'):
+        total_reduction += 0.05  # Reduces fuel consumption by 5%
+
+    # Cap the total reduction at 100% (or 1.0) to prevent fuel cost going below zero
+    total_reduction = min(total_reduction, 1.0)
+
+    # Calculate the final fuel cost by applying the total reduction
+    final_fuel_cost = base_fuel_cost * (1.0 - total_reduction)
+
+    return final_fuel_cost
 
 
 # Guide to create a new item:
@@ -307,10 +335,8 @@ def calculate_fuel_cost(player_id, base_fuel_cost):
 # 4. Ensure that the effect matches the name used in the has_item function logic.
 
 
-
-
 # Muutetaan polttoaineen kulutus funktiota käyttäessä liikkumista ja hyökkäystä
-def move_player(player_id, destination_icao):
+def move_player(player_id, destination_icao, final_fuel_cost):
     conn = create_connection()
     if conn:
         cursor = conn.cursor(dictionary=True)
@@ -337,14 +363,18 @@ def move_player(player_id, destination_icao):
                 fuel_cost = calculate_fuel_cost(player_id, base_fuel_cost)
 
                 if fuel_cost > current_fuel:
-                    print(f"❌ Sinulla ei ole tarpeeksi polttoainetta tähän matkaan. Tarvittava polttoaine: {fuel_cost:.2f} km.")
+                    print(
+                        f"❌ Sinulla ei ole tarpeeksi polttoainetta tähän matkaan. Tarvittava polttoaine: {fuel_cost:.2f} km.")
                 else:
                     new_fuel = current_fuel - fuel_cost
-                    cursor.execute("UPDATE game SET location = %s, fuel = %s WHERE id = %s", (destination_icao, new_fuel, player_id))
+                    cursor.execute("UPDATE game SET location = %s, fuel = %s WHERE id = %s",
+                                   (destination_icao, new_fuel, player_id))
                     conn.commit()
-                    print(f"Olet nyt saapunut kohteeseen {destination_icao}. Matka oli {base_fuel_cost:.2f} km, polttoainetta jäljellä: {new_fuel:.2f} km.")
+                    print(
+                        f"Olet nyt saapunut kohteeseen {destination_icao}. Matka oli {final_fuel_cost:.2f} km, polttoainetta jäljellä: {new_fuel:.2f} km.")
         cursor.close()
         conn.close()
+
 
 def attack_airport(player_id, destination_icao):
     destination_airport = get_airport_info(destination_icao)
@@ -364,11 +394,11 @@ def attack_airport(player_id, destination_icao):
             5: (15, 25)
         }
         precise_attack_success_range = {
-            1: (50, 60),
-            2: (45, 55),
-            3: (40, 50),
-            4: (35, 45),
-            5: (30, 40)
+            1: (60, 70),
+            2: (55, 65),
+            3: (50, 60),
+            4: (45, 55),
+            5: (40, 50)
         }
 
         # Lasketaan polttoainekustannus ottaen huomioon esineiden vaikutus
@@ -383,8 +413,8 @@ def attack_airport(player_id, destination_icao):
 
         if attack_choice == '2' and precise_attack_cost > player['fuel']:
             print("⚠️ VAROITUS! Sinulla ei ole tarpeeksi polttoainetta tarkempaan hyökkäykseen.")
-            varmistus = input("Haluatko hyökätä nopeasti sen sijaan? (K/E): ").strip().upper()
-            if varmistus == 'K':
+            varmistus = input("Haluatko hyökätä nopeasti sen sijaan? (Y/N): ").strip().upper()
+            if varmistus.upper == 'Y':
                 attack_choice = '1'
             else:
                 print("⚠️ Hyökkäys peruutettu.")
@@ -406,11 +436,24 @@ def attack_airport(player_id, destination_icao):
             success_chance = 100
             print("🎯 DEBUG ATTACK BOOSTER käytössä! Hyökkäys onnistuu varmasti.")
 
+        if has_item(player_id, 'attack_booster_5_percent'):
+            success_chance = success_chance + 5
+            print("🎯 5% enemmä tehoo osta prime.")
+
+        if has_item(player_id, 'attack_booster_10_percent'):
+            success_chance = success_chance + 10
+            print("🎯 10% enemmä tehoo osta prime.")
+
+        if has_item(player_id, 'attack_booster_15_percent'):
+            success_chance = success_chance + 15
+            print("🎯 15% enemmä tehoo osta prime.")
+
         # Tarkistetaan, onko pelaajalla tarpeeksi polttoainetta
         if fuel_cost > player['fuel']:
             print("❌ Sinulla ei ole tarpeeksi polttoainetta hyökätä tähän kohteeseen!")
         else:
-            print(f"🚀 Hyökkäys käynnissä! Onnistumistodennäköisyys: {success_chance}%, Polttoainekustannus: {fuel_cost:.2f} km")
+            print(
+                f"🚀 Hyökkäys käynnissä! Onnistumistodennäköisyys: {success_chance}%, Polttoainekustannus: {fuel_cost:.2f} km")
             print(f"Polttoainetta jäljellä ennen hyökkäystä: {player['fuel']:.2f} km")
 
             time.sleep(1)
@@ -421,7 +464,8 @@ def attack_airport(player_id, destination_icao):
 
             # Arvotaan hyökkäyksen onnistuminen
             if random.randint(1, 100) <= success_chance:
-                print(f"🏆 Hyökkäys kohteeseen {destination_airport['name']} onnistui! Lentokenttä on nyt Suomen hallinnassa.")
+                print(
+                    f"🏆 Hyökkäys kohteeseen {destination_airport['name']} onnistui! Lentokenttä on nyt Suomen hallinnassa.")
                 update_airport_owner(destination_icao, 'Finland')
                 add_war_points(player_id, 10)  # Pelaajalle annetaan 10 sotapistettä onnistuneesta hyökkäyksestä
                 print("🛡️ Sinulle on annettu 10 sotapistettä onnistuneesta hyökkäyksestä!")
@@ -434,11 +478,6 @@ def attack_airport(player_id, destination_icao):
         wait_for_enter()
     else:
         print("⚠️ Kohdetta ei voida hyökätä. Tarkista kohde ja yritä uudelleen.")
-
-
-
-
-
 
 
 def add_war_points(player_id, points):
@@ -455,10 +494,11 @@ def add_war_points(player_id, points):
             cursor.close()
             conn.close()
 
+
 def open_shop(player_id):
     os.system('cls' if os.name == 'nt' else 'clear')
     print("🛒 Kauppa on avoinna! Valitse ostettava esine:")
-    
+
     # Haetaan esineet tietokannasta
     conn = create_connection()
     if conn:
@@ -468,26 +508,27 @@ def open_shop(player_id):
         items = cursor.fetchall()
         cursor.close()
         conn.close()
-        
+
         # Näytetään esineet pelaajalle
         for item in items:
             print(f"{item['id']} - {item['name']} ({item['description']}) - Hinta: {item['price']} sotapistettä")
-        
+
         item_choice = input("\nSyötä ostettavan esineen ID tai 'CANCEL' peruuttaaksesi: ").strip()
         if item_choice.lower() == 'cancel':
             print("Kauppa suljettu.")
             return
-        
+
         try:
             item_choice = int(item_choice)
             selected_item = next((item for item in items if item['id'] == item_choice), None)
-            
+
             if selected_item:
                 purchase_item(player_id, selected_item)
             else:
                 print("⚠️ Virheellinen valinta.")
         except ValueError:
             print("⚠️ Virheellinen valinta.")
+
 
 def purchase_item(player_id, item):
     conn = create_connection()
@@ -498,14 +539,17 @@ def purchase_item(player_id, item):
 
         if player and player['war_points'] >= item['price']:
             # Tarkistetaan onko pelaajalla jo kyseinen esine
-            cursor.execute("SELECT quantity FROM inventory WHERE player_id = %s AND item_id = %s", (player_id, item['id']))
+            cursor.execute("SELECT quantity FROM inventory WHERE player_id = %s AND item_id = %s",
+                           (player_id, item['id']))
             existing_item = cursor.fetchone()
 
             if existing_item and existing_item['quantity'] > 0:
                 print(f"❌ Sinulla on jo esine {item['name']} inventaariossasi.")
             else:
                 cursor.execute("UPDATE game SET war_points = war_points - %s WHERE id = %s", (item['price'], player_id))
-                cursor.execute("INSERT INTO inventory (player_id, item_id, quantity) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE quantity = 1", (player_id, item['id']))
+                cursor.execute(
+                    "INSERT INTO inventory (player_id, item_id, quantity) VALUES (%s, %s, 1) ON DUPLICATE KEY UPDATE quantity = 1",
+                    (player_id, item['id']))
                 conn.commit()
                 print(f"✅ Ostit esineen {item['name']} onnistuneesti!")
         else:
@@ -513,7 +557,6 @@ def purchase_item(player_id, item):
 
         cursor.close()
         conn.close()
-
 
 
 def display_player_status(player, remaining_airports):
@@ -532,8 +575,10 @@ def display_player_status(player, remaining_airports):
     print(f"🛡️ Sotapisteet: {player['war_points']}")
     print(f"🌍 Olet vallannut takaisin {liberation_percentage:.2f}% Suomen lentokentistä.")
 
+
 def wait_for_enter():
     input("Paina enter jatkaaksesi...")
+
 
 def display_story():
     tarina = hae_tarina()
@@ -543,6 +588,7 @@ def display_story():
             os.system('cls' if os.name == 'nt' else 'clear')
             print(osa)
             wait_for_enter()
+
 
 if __name__ == "__main__":
     player_id = '1'  # Määritellään player_id ennen kuin kutsutaan reset_game_on_start
