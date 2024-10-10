@@ -56,15 +56,14 @@ REPLACE INTO `airport` (`id`, `ident`, `name`, `latitude_deg`, `longitude_deg`, 
 CREATE TABLE IF NOT EXISTS `game` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `location` varchar(40) NOT NULL,
-  `screen_name` varchar(40) DEFAULT NULL,
   `fuel` int(11) DEFAULT 500,
   `war_points` int(11) DEFAULT 0,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table flight_game.game: ~1 rows (approximately)
-REPLACE INTO `game` (`id`, `location`, `screen_name`, `fuel`, `war_points`) VALUES
-	(1, 'EFTP', 'Pelaaja', 100, 0);
+-- Dumping data for table flight_game.game: ~0 rows (approximately)
+REPLACE INTO `game` (`id`, `location`, `fuel`, `war_points`) VALUES
+	(1, 'EFTP', 250, 0);
 
 -- Dumping structure for table flight_game.inventory
 CREATE TABLE IF NOT EXISTS `inventory` (
@@ -77,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `inventory` (
   CONSTRAINT `inventory_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `item` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table flight_game.inventory: ~1 rows (approximately)
+-- Dumping data for table flight_game.inventory: ~0 rows (approximately)
 
 -- Dumping structure for table flight_game.item
 CREATE TABLE IF NOT EXISTS `item` (
@@ -87,31 +86,22 @@ CREATE TABLE IF NOT EXISTS `item` (
   `effect` varchar(100) DEFAULT NULL,
   `price` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=25 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_uca1400_ai_ci;
 
--- Dumping data for table flight_game.item: ~5 rows (approximately)
+-- Dumping data for table flight_game.item: ~12 rows (approximately)
 REPLACE INTO `item` (`id`, `name`, `description`, `effect`, `price`) VALUES
-	(1, 'Mini Aviation Turbofan Engine', '10% efficient fuel usage', 'reduce_fuel_usage_10', 100),
-	(2, 'Attack Booster', 'Parantaa hyökkäysten onnistumistodennäköisyyttä 5 %', 'attack_booster', 50),
-	(3, 'DEBUG ATTACK BOOSTER', 'Täydellinen onnistumisprosentti hyökkäyksissä', 'debug_attack_booster', 10),
-	(4, 'Fuel Booster', 'Vähentää polttoaineenkulutusta hyökkäyksissä 10%', 'fuel_booster', 20),
-	(5, 'Debug Fuel Saver', 'Reduces fuel consumption by 90%', 'debug_fuel_saver', 0);
-
--- Dumping structure for table flight_game.store
-CREATE TABLE IF NOT EXISTS `store` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `item` varchar(100) NOT NULL,
-  `effect` varchar(255) NOT NULL,
-  `price` int(11) NOT NULL,
-  `bought` tinyint(1) DEFAULT 0,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Dumping data for table flight_game.store: ~3 rows (approximately)
-REPLACE INTO `store` (`id`, `item`, `effect`, `price`, `bought`) VALUES
-	(1, 'moottori', 'Tekee bensan käytöstä tehokkaampaa', 1000, 0),
-	(2, 'moottori prime', 'Tekee bensan käytöstä vielä tehokkaampaa', 2000, 0),
-	(3, 'bensa', '10 fuel lisää', 10, 0);
+	(13, 'Mini Ilmailun Turbopuhallinmoottori', 'Vähentää polttoaineenkulutusta 2,5%', 'fuel_efficiency_booster_2_5_percent', 25),
+	(14, 'Pieni Ilmailun Turbopuhallinmoottori', 'Vähentää polttoaineenkulutusta 5%', 'fuel_efficiency_booster_5_percent', 50),
+	(15, 'Keskikokoinen Ilmailun Turbopuhallinmoottori', 'Vähentää polttoaineenkulutusta 7,5%', 'fuel_efficiency_booster_7_5_percent', 75),
+	(16, 'Suuri Ilmailun Turbopuhallinmoottori', 'Vähentää polttoaineenkulutusta 10%', 'fuel_efficiency_booster_10_percent', 100),
+	(17, 'Erittäin Suuri Ilmailun Turbopuhallinmoottori', 'Vähentää polttoaineenkulutusta 12,5%', 'fuel_efficiency_booster_12_5_percent', 125),
+	(18, 'Mega Ilmailun Turbopuhallinmoottori', 'Vähentää polttoaineenkulutusta 15%', 'fuel_efficiency_booster_15_percent', 150),
+	(19, 'Pieni Hyökkäysvahvistin', 'Kasvattaa hyökkäyksen onnistumisprosenttia 2,5%', 'attack_booster_2_5_percent', 25),
+	(20, 'Pieni Hyökkäysvahvistin', 'Kasvattaa hyökkäyksen onnistumisprosenttia 5%', 'attack_booster_5_percent', 50),
+	(21, 'Keskikokoinen Hyökkäysvahvistin', 'Kasvattaa hyökkäyksen onnistumisprosenttia 7,5%', 'attack_booster_7_5_percent', 75),
+	(22, 'Suuri Hyökkäysvahvistin', 'Kasvattaa hyökkäyksen onnistumisprosenttia 10%', 'attack_booster_10_percent', 100),
+	(23, 'Erittäin Suuri Hyökkäysvahvistin', 'Kasvattaa hyökkäyksen onnistumisprosenttia 12,5%', 'attack_booster_12_5_percent', 125),
+	(24, 'Mega Hyökkäysvahvistin', 'Kasvattaa hyökkäyksen onnistumisprosenttia 15%', 'attack_booster_15_percent', 150);
 
 /*!40103 SET TIME_ZONE=IFNULL(@OLD_TIME_ZONE, 'system') */;
 /*!40101 SET SQL_MODE=IFNULL(@OLD_SQL_MODE, '') */;
