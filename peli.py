@@ -673,7 +673,7 @@ def display_player_status(player, remaining_airports):
             Align.center(main_panel_content),
             title="🛫 Pelaajan Tilannekatsaus 🛬",
             border_style="bold green4",
-            padding=(4, 8),  # Doubled the padding for more space around the content
+            padding=(2, 4),  
         )
 
         # Display the unified main panel
